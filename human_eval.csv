@@ -1,0 +1,41 @@
+input_text,reference,prediction,fluency,relevance,adequacy,notes
+"Emotion: sentimental | Situation: i get sad when i think of my aunt. i wish she was still here | Customer: customer: it was 10 years ago agent:
+Agent:",well have you been living a happy life? she would probably be happy about that.,i'm sorry to hear that. i hope she is a good memories.,,,,
+"Emotion: embarrassed | Situation: i tripped last night in front of people. i felt pretty bad about it | Customer: customer: i tripped last night in front of people. i felt bad about it agent:
+Agent:",ah man! you shouldn't feel bad about tripping. why do you feel bad about it?,i'm sorry to hear that. i hope you can get better.,,,,
+"Emotion: caring | Situation: when i took care of my daughter after her shots | Customer: customer: wow that often. that must really be stressful. agent:
+Agent:","it is, and yeah until they are over the age of you go go every other month crazy poor babies!!",she was so excited. she was so excited to be a little old.,,,,
+"Emotion: hopeful | Situation: i lost an earring at work..... im hoping i find it | Customer: customer: not really, i just really liked them agent:
+Agent:",awww... still thats upsetting,i'm sorry to hear that. i hope you have a good time!,,,,
+"Emotion: anticipating | Situation: i cant wait till i save enough money to take a trip to antarctica. its been a dream of mine. | Customer: customer: are you currently saving up? agent:
+Agent:","yes, but it is crazy expensive to go.",i'm not sure yet. i'm going to be a lot of the beach.,,,,
+"Emotion: ashamed | Situation: i was disappointed in myself when i got into a pointless argument with my brother. it wasn't even anything important. | Customer: customer: yes we talked it over and thought about all the good times we have when we get along! agent:
+Agent:",i'm glad you were able to remedy the situation so easily! i think that shows you have a really good relationship with him.,i'm sorry to hear that. i hope you have a good time.,,,,
+"Emotion: anxious | Situation: i have a court case coming up against someone who committed fraud against me. even though i'm sure i have enough evidence, i'm nervous that things won't go my way. | Customer: customer: oh good luck! i hope you're able to win. agent:
+Agent:","thank you! i'm sure i have enough evidence to prove my case, but it's still very nerve wracking!",i'm not sure what i'm going to do you have to be fine.,,,,
+"Emotion: content | Situation: i love my job. i have been at the same place for several years now. i am very pleased with the way things are going. | Customer: customer: it's awesome. hope you're getting promotions at right time. agent:
+Agent:",i get regular promotions and i am very pleased with the way things are going.,i am sure you will be fine.,,,,
+"Emotion: excited | Situation: i was going to see the new marvel movie. on the way i got really pumped up. | Customer: customer: it was called infinity war! you should find time to see it. agent:
+Agent:",they do put out good movies most of the time. i will try and check it out.,i'm not sure what i's the movie was it was it was it?,,,,
+"Emotion: afraid | Situation: someone got shot near my house the other day. i am terrified now and want to move. | Customer: customer: someone got shot near my house the other day. i am terrified now and want to move. agent:
+Agent:",did you see the person that got shot when it happened?,oh no! what happened?,,,,
+"Emotion: sentimental | Situation: i miss the smell of burnt hay in the fall, my hometown farmers used to do it every year. | Customer: customer: yeah, i wish i visited more often, but my job keeps me away. agent:
+Agent:","i am sorry to hear that, well maybe when you retire!",i'm sorry to hear that. i hope you have a good memories.,,,,
+"Emotion: guilty | Situation: i cheated on my wife. | Customer: customer: i coudlnt believe what i did, but i couldnt stop. agent:
+Agent:",you've got me on the edge of my seat. what did you do?,i'm sure you will be fine.,,,,
+"Emotion: excited | Situation: going to some mma fights! | Customer: customer: what happens on saturday? agent:
+Agent:",i'm going to an mma show in louisville. there's going to be a bunch of awesome fights!,i'm going to be a big fan,,,,
+"Emotion: caring | Situation: one of our friends just got a call that her child was not at school. | Customer: customer: we don't know yet, she's gone to the school and will let us know. we're hoping it's a mistake. she's 11 years old. agent:
+Agent:",maybe she skipped the school for the day?,i hope so.,,,,
+"Emotion: grateful | Situation: my mother was sick for a time, but she is now doing great, thank go! | Customer: customer: my mother was sick for a time, but she is now doing great, agent:
+Agent:",i'm glad to hear she is doing well.,that's great! i'm glad you have a great time.,,,,
+"Emotion: surprised | Situation: i was shocked in a good way over the weekend. my brother got us football tickets | Customer: customer: well, that's good. sounds like you guys will be having some fun watching the game. much better than tv! agent:
+Agent:",yeah i am excited about it,i am so excited for the weekend. i'm not sure.,,,,
+"Emotion: proud | Situation: a avoided fast food restaurants all week i feel good about myself | Customer: customer: i feel really good about myself today, i avoided fast food restaurants all week and probably saved a ton of cash agent:
+Agent:","oh, that's a good point! i never realized how much money i was spending for fast food until i started making a budget.",i bet you were proud of yourself.,,,,
+"Emotion: anxious | Situation: i have a huge bachelor party coming up, feeling nerouvs | Customer: customer: i have a bachelor party coming up and i'm so nervous agent:
+Agent:",aw man they are usually a lot of fun. why are you nervous?,i'm sure you will be fine!,,,,
+"Emotion: terrified | Situation: while camping alone, i awoke to sound of growling outside my tent. it sounded like a big old mean wolf who wanted to eat me. | Customer: customer: oh no! did you go out and examine what it is? agent:
+Agent:",i carefully unzipped the tent slowly and shined my flashlight out.,i did not. i think i'm not sure i'm not sure i'll do it.,,,,
+"Emotion: angry | Situation: my kids refuse to go bed every night. i can't stand it. | Customer: customer: do they have insomnia? agent:
+Agent:",they going to have sore bottoms soon. i can't stand it.,i have no idea. i'm not sure i'll be able to go to go to the house.,,,,

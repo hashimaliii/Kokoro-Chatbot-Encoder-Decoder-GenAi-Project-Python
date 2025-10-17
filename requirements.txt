@@ -1,0 +1,6 @@
+pandas
+sentencepiece>=0.1.95
+tqdm>=4.64.0
+torch
+sacrebleu
+rouge-score

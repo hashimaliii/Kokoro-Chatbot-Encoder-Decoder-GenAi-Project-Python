@@ -1,0 +1,96 @@
+# Building an Emotion-Aware Customer Support Agent with a From-Scratch Transformer
+
+This project shows how to build a seq2seq customer-support agent that conditions responses on the customer's emotion and situation. It uses the Empathetic Dialogues dataset, trains a SentencePiece tokenizer, and implements a Transformer encoder–decoder from scratch in PyTorch.
+
+Why this project
+
+- Many dialog systems ignore emotional context. Conditioning on emotion improves response relevance and empathy.
+- This is a minimal, reproducible pipeline: raw CSV -> preprocessing -> tokenizer -> model -> training -> evaluation and human-in-the-loop annotation.
+
+What you get
+
+- Preprocessing that creates the exact input/target format:
+  - Input (X):
+    "Emotion: {emotion} | Situation: {situation} | Customer: {customer_utterance}\nAgent:"
+  - Target (Y):
+    "{agent_reply}"
+- SentencePiece tokenization trained on the training split and saved in `preprocessed/`.
+- 80/10/10 train/val/test split saved under `preprocessed/`.
+- A PyTorch Seq2Seq Transformer (encoder–decoder) with positional encodings, multi-head attention, feed-forward layers, layer normalization, and residual connections.
+- Greedy and beam-search decoding, BLEU/ROUGE-L/chrF/perplexity evaluation, and human-eval CSV export for Fluency / Relevance / Adequacy ratings.
+- Training with teacher forcing, Adam optimizer with recommended betas, gradient clipping, checkpointing, best-model selection by validation BLEU, and optional early stopping.
+
+Key files
+
+- `preprocessing.py` — Reads `emotion-emotion_69k.csv`, normalizes text, trains/loads SentencePiece, creates `preprocessed/{train,val,test}_processed.csv` with `input_text` and `target_text`.
+- `model.py` — Implements the Transformer seq2seq model and training loop. Offers CLI options to control batch size, LR, epochs, decoding strategy, beam size, and early stopping.
+- `human_eval.csv` — Generated after training (or via `--only-generate`) and contains input, reference, prediction, and empty columns for human scores.
+- `requirements.txt` — Lists runtime dependencies (PyTorch, SentencePiece, tqdm, sacrebleu, rouge-score).
+
+Architecture overview
+
+- Tokenization: SentencePiece BPE trained on the train split. Special emotion tokens are appended to the vocabulary.
+- Encoder: Several stacked encoder layers, each with self-attention and a position-wise feed-forward network.
+- Decoder: Stacked decoder layers with masked self-attention and encoder-decoder attention, producing token logits over the joint vocabulary.
+- Loss: CrossEntropyLoss ignoring the PAD token.
+
+Training recipe and hyperparameters
+
+- Optimizer: Adam with betas=(0.9, 0.98)
+- Learning rate: configurable (recommended 1e-4 to 5e-4)
+- Batch sizes: 32 or 64
+- Gradient clipping: max norm 1.0
+- Teacher forcing: yes (decoder input is shifted target)
+- Early stopping: optional; monitors validation BLEU with configurable patience and min-delta
+
+Evaluation
+
+- Automatic metrics: BLEU, ROUGE-L, chrF, Perplexity
+- Human evaluation: Save `human_eval.csv` with model outputs and blank columns for Fluency, Relevance, Adequacy (1-5). Use this file for human annotation or a simple Streamlit UI.
+
+Usage
+
+1. Install dependencies:
+
+```powershell
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+2. Preprocess and train:
+
+```powershell
+python preprocessing.py
+python model.py --batch-size 64 --lr 1e-4 --epochs 10 --decoding beam --beam-size 4 --early-stopping --patience 3
+```
+
+3. Generate human-eval CSV (without retraining):
+
+```powershell
+python model.py --only-generate --generate-n 50 --decoding beam --beam-size 6
+```
+
+Qualitative examples and analysis
+
+- After training, inspect `human_eval.csv` for example inputs, references, and model predictions.
+- For each example, annotate Fluency / Relevance / Adequacy on a 1–5 scale and compute average scores.
+- Compare BLEU/ROUGE-L/chrF with human scores to see how well the automatic metrics correlate with human judgments.
+
+Next steps and improvements
+
+- Swap in standard metric libraries (sacrebleu, rouge-score) for more reliable evaluation (already available in `requirements.txt`).
+- Implement beam normalization and length-penalty tuning for better beam outputs.
+- Add scheduled learning rate or Transformer-specific optimizers (e.g., AdamW with warmup).
+- Add a Streamlit interface for rapid human annotation of `human_eval.csv`.
+- Fine-tune or replace the from-scratch Transformer with a pretrained encoder–decoder (e.g., T5, BART) for much better quality with fewer training epochs.
+
+Closing thoughts
+
+This repo provides a compact, end-to-end pipeline to train an emotion-aware dialogue agent from scratch. It’s a good base for experimentation — swapping tokenizers, adding pretrained components, or integrating human-in-the-loop evaluation.
+
+If you want, I can also:
+- Run a smoke test here (single-batch forward pass) to validate shapes and runtime.
+- Add a Streamlit UI to label `human_eval.csv` and export annotated results.
+- Convert the training loop to use PyTorch Lightning for cleaner code and easier multi-GPU training.
+
+Happy to help next steps — tell me which you'd like me to do first!
