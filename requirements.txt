@@ -4,19 +4,3 @@ tqdm>=4.64.0
 torch
 sacrebleu
 rouge-score
-# Core framework
-streamlit>=1.39.0
-
-# Deep learning
-torch>=2.5.0
-transformers>=4.44.0
-tokenizers>=0.19.0
-
-# Utilities
-requests>=2.32.0
-
-# Optional but recommended for smoother UX
-tqdm>=4.66.0
-
-# For environments using GPUs (optional, auto-fallback to CPU)
-accelerate>=0.34.0
