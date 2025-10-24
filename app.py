@@ -1,143 +1,178 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 import os
+import time
+import csv
 import torch
-import torch.nn.functional as F
 import streamlit as st
+import sentencepiece as spm
 import requests
-from datetime import datetime
 
-# -------------------------
-# Model Loader
-# -------------------------
-MODEL_DIR = "checkpoints"
-MODEL_PATH = os.path.join(MODEL_DIR, "best_model.pth")
-MODEL_URL = "https://github.com/hashimaliii/Kokoro-Chatbot-Encoder-Decoder-GenAi-Project-Python/raw/main/checkpoints/best_model.pth"
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+from model import TransformerSeq2Seq, VOCAB_SIZE, DEVICE, MAX_TARGET_LEN, generate_greedy, generate_beam
 
+# --------------------------------
+# Fix Streamlit file watcher issue
+# --------------------------------
+os.environ["STREAMLIT_SERVER_FILE_WATCHER_TYPE"] = "none"
+os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
-def download_model():
-    """Download model checkpoint if not available locally."""
-    os.makedirs(MODEL_DIR, exist_ok=True)
-    with st.spinner("Downloading model weights..."):
-        response = requests.get(MODEL_URL)
-        if response.status_code == 200:
-            with open(MODEL_PATH, "wb") as f:
-                f.write(response.content)
-            st.success("✅ Model downloaded successfully!")
+# --------------------------------
+# GitHub Raw URLs (for auto-download)
+# --------------------------------
+BASE_URL = "https://raw.githubusercontent.com/hashimaliii/Kokoro-Chatbot-Encoder-Decoder-GenAi-Project-Python/main"
+CHECKPOINT_DIR = "checkpoints"
+SP_MODEL = os.path.join("preprocessed", "spm_emotion.model")
+BEST_MODEL = os.path.join(CHECKPOINT_DIR, "best_model.pth")
+
+SP_MODEL_URL = f"{BASE_URL}/preprocessed/spm_emotion.model"
+BEST_MODEL_URL = f"{BASE_URL}/checkpoints/best_model.pth"
+
+# --------------------------------
+# Utility: download file if not found
+# --------------------------------
+def ensure_file(local_path, url):
+    os.makedirs(os.path.dirname(local_path), exist_ok=True)
+    if not os.path.exists(local_path):
+        st.warning(f"Downloading {os.path.basename(local_path)} from GitHub...")
+        r = requests.get(url)
+        if r.status_code == 200:
+            with open(local_path, "wb") as f:
+                f.write(r.content)
+            st.success(f"✅ Downloaded {os.path.basename(local_path)}")
         else:
-            st.error("❌ Failed to download model. Please check the link.")
+            st.error(f"Failed to download {os.path.basename(local_path)} ({r.status_code})")
 
+# Ensure model files exist
+ensure_file(SP_MODEL, SP_MODEL_URL)
+ensure_file(BEST_MODEL, BEST_MODEL_URL)
+
+# --------------------------------
+# Streamlit App Config
+# --------------------------------
+st.set_page_config(page_title="Emotion-Aware Chatbot", layout="centered")
+st.title("💬 Emotion-Aware Chatbot")
+
+# --------------------------------
+# Cached resources
+# --------------------------------
+@st.cache_resource
+def load_tokenizer(path):
+    sp = spm.SentencePieceProcessor()
+    sp.load(path)
+    return sp
 
 @st.cache_resource
-def load_model():
-    """Load PyTorch model (Transformer)."""
-    if not os.path.exists(MODEL_PATH):
-        download_model()
-
-    checkpoint = torch.load(MODEL_PATH, map_location=DEVICE)
-    model = checkpoint.get("model", None)
-
-    if model is None:
-        from model import TransformerModel
-        model = TransformerModel(**checkpoint["config"])
-        model.load_state_dict(checkpoint["state_dict"])
-
-    model.to(DEVICE)
+def load_model(path):
+    model = TransformerSeq2Seq(VOCAB_SIZE).to(DEVICE)
+    ckpt = torch.load(path, map_location=DEVICE)
+    model.load_state_dict(ckpt["model_state_dict"])
     model.eval()
     return model
 
+# Load resources
+sp = load_tokenizer(SP_MODEL)
+model = load_model(BEST_MODEL)
 
-def generate_reply(model, tokenizer, emotion, user_input, max_len=50):
-    """Generate response using greedy decoding."""
-    model.eval()
-    with torch.no_grad():
-        input_text = f"Emotion: {emotion} | Situation: none | Customer: {user_input}\nAgent:"
-        input_ids = tokenizer.encode(input_text, return_tensors="pt").to(DEVICE)
+# --------------------------------
+# Sidebar
+# --------------------------------
+st.sidebar.header("⚙️ Settings")
+decoding = st.sidebar.radio("Decoding method", ["Greedy", "Beam"])
+beam_size = st.sidebar.slider("Beam size", 2, 10, 4)
 
-        for _ in range(max_len):
-            outputs = model(input_ids)
-            next_token = outputs.logits[:, -1, :].argmax(dim=-1).unsqueeze(0)
-            input_ids = torch.cat([input_ids, next_token], dim=1)
-            if next_token.item() == tokenizer.eos_token_id:
-                break
+checkpoint_files = [f for f in os.listdir(CHECKPOINT_DIR) if f.endswith(".pth")]
+if checkpoint_files:
+    selected_ckpt = st.sidebar.selectbox("Available checkpoints", checkpoint_files)
+    if st.sidebar.button("Load selected checkpoint"):
+        ensure_file(os.path.join(CHECKPOINT_DIR, selected_ckpt),
+                    f"{BASE_URL}/checkpoints/{selected_ckpt}")
+        model = load_model(os.path.join(CHECKPOINT_DIR, selected_ckpt))
+        st.sidebar.success(f"Loaded: {selected_ckpt}")
 
-        response = tokenizer.decode(input_ids[0], skip_special_tokens=True)
-        return response.split("Agent:")[-1].strip()
-
-
-# -------------------------
-# Streamlit UI
-# -------------------------
-st.set_page_config(page_title="Emotion-Aware Chatbot", page_icon="💬", layout="centered")
-
-st.markdown("<h1 style='text-align:center;'>💬 Emotion-Aware Chatbot</h1>", unsafe_allow_html=True)
-
-if "messages" not in st.session_state:
-    st.session_state["messages"] = []
-if "clear_input" not in st.session_state:
-    st.session_state["clear_input"] = False
-
-emotion = st.selectbox("Choose Emotion:", ["happy", "sad", "angry", "neutral"])
-
-# 🧩 Use key for text input
-user_input = st.text_input(
-    "Type your message:",
-    key="user_input",
-    value="" if st.session_state.clear_input else "",
-)
-
-# Reset flag right after rendering text_input
-if st.session_state.clear_input:
-    st.session_state.clear_input = False
-
-# Send button logic
-if st.button("Send") and user_input.strip():
-    st.session_state["messages"].append({
-        "role": "user",
-        "content": user_input,
-        "time": datetime.now().strftime("%H:%M:%S")
-    })
-
-    try:
-        from transformers import AutoTokenizer
-        tokenizer = AutoTokenizer.from_pretrained("gpt2")
-        model = load_model()
-        response = generate_reply(model, tokenizer, emotion, user_input)
-    except Exception as e:
-        response = f"⚠️ Model error: {e}"
-
-    st.session_state["messages"].append({
-        "role": "bot",
-        "content": response,
-        "time": datetime.now().strftime("%H:%M:%S")
-    })
-
-    # ✅ Instead of directly clearing the input (which causes the crash),
-    # set a flag and rerun
-    st.session_state.clear_input = True
+if st.sidebar.button("🗑️ Clear conversation"):
+    st.session_state.clear()
     st.rerun()
 
+if st.sidebar.button("💾 Save conversation"):
+    conv = st.session_state.get("history", [])
+    if conv:
+        fname = f"conversation_{int(time.time())}.csv"
+        with open(fname, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=["role", "text"])
+            writer.writeheader()
+            writer.writerows(conv)
+        st.sidebar.success(f"Saved {fname}")
 
-# -------------------------
-# Chat History Display
-# -------------------------
-st.markdown("---")
-for msg in st.session_state["messages"]:
-    role_icon = "🙂" if msg["role"] == "user" else "🤖"
-    bubble_color = "#1E90FF" if msg["role"] == "user" else "#333333"
-    text_color = "#FFFFFF"
-    st.markdown(
-        f"""
-        <div style='background-color:{bubble_color};
-                    color:{text_color};
-                    padding:10px;
-                    border-radius:10px;
-                    margin:5px 0;'>
-            <b>{role_icon}</b> {msg['content']}<br>
-            <small><i>{msg['time']}</i></small>
-        </div>
-        """,
-        unsafe_allow_html=True,
+# --------------------------------
+# Helpers
+# --------------------------------
+def encode_input(sp_path, text):
+    sp_proc = spm.SentencePieceProcessor()
+    sp_proc.load(sp_path)
+    return sp_proc.encode(text, out_type=int)
+
+def decode_output(ids):
+    return sp.decode([i for i in ids if i not in [sp.pad_id(), sp.bos_id(), sp.eos_id()]])
+
+# --------------------------------
+# Session state setup
+# --------------------------------
+if "history" not in st.session_state:
+    st.session_state.history = []
+if "emotion" not in st.session_state:
+    st.session_state.emotion = "neutral"
+
+# --------------------------------
+# Emotion context
+# --------------------------------
+with st.sidebar.expander("🧠 Emotion Context"):
+    st.session_state.emotion = st.selectbox(
+        "Select Emotion",
+        ["neutral", "happy", "sad", "angry", "fearful", "surprised", "disgusted"],
+        index=["neutral", "happy", "sad", "angry", "fearful", "surprised", "disgusted"].index(st.session_state.emotion)
     )
+
+# --------------------------------
+# Chat display
+# --------------------------------
+for msg in st.session_state.history:
+    if msg["role"] == "customer":
+        with st.chat_message("user", avatar="🙂"):
+            st.markdown(msg["text"])
+            st.caption(msg.get("time", ""))
+    else:
+        with st.chat_message("assistant", avatar="🤖"):
+            st.markdown(msg["text"])
+            st.caption(msg.get("time", ""))
+
+# --------------------------------
+# Input box (persistent bottom)
+# --------------------------------
+prompt = st.chat_input("Type your message...")
+
+if prompt:
+    current_time = time.strftime("%H:%M:%S")
+    st.session_state.history.append({"role": "customer", "text": prompt, "time": current_time})
+
+    with st.chat_message("user", avatar="🙂"):
+        st.markdown(prompt)
+        st.caption(current_time)
+
+    emotion = st.session_state.emotion
+    model_input = f"Emotion: {emotion} | Customer: {prompt}\nAgent:"
+
+    with st.chat_message("assistant", avatar="🤖"):
+        with st.spinner("Thinking..."):
+            src_ids = encode_input(SP_MODEL, model_input)
+            src_tensor = torch.tensor(src_ids, dtype=torch.long).to(DEVICE)
+
+            if decoding.lower() == "greedy":
+                pred_ids = generate_greedy(model, src_tensor, max_len=MAX_TARGET_LEN)
+            else:
+                pred_ids = generate_beam(model, src_tensor, beam_size=beam_size, max_len=MAX_TARGET_LEN)
+
+            reply = decode_output(pred_ids)
+            reply_time = time.strftime("%H:%M:%S")
+
+            st.markdown(reply)
+            st.caption(reply_time)
+
+    st.session_state.history.append({"role": "agent", "text": reply, "time": reply_time})
