@@ -1,14 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""
-Emotion-Aware Chatbot (Streamlit Interface)
--------------------------------------------
-- Loads Transformer model from local or GitHub link if missing
-- Displays user input + model responses in chat format
-- Supports emotion-based dialogue conditioning
-"""
-
 import os
 import torch
 import torch.nn.functional as F
@@ -22,7 +14,6 @@ from datetime import datetime
 MODEL_DIR = "checkpoints"
 MODEL_PATH = os.path.join(MODEL_DIR, "best_model.pth")
 MODEL_URL = "https://github.com/hashimaliii/Kokoro-Chatbot-Encoder-Decoder-GenAi-Project-Python/raw/main/checkpoints/best_model.pth"
-
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 
@@ -49,7 +40,7 @@ def load_model():
     model = checkpoint.get("model", None)
 
     if model is None:
-        from model import TransformerModel  # ensure model.py exists
+        from model import TransformerModel
         model = TransformerModel(**checkpoint["config"])
         model.load_state_dict(checkpoint["state_dict"])
 
@@ -58,9 +49,6 @@ def load_model():
     return model
 
 
-# -------------------------
-# Inference Helper
-# -------------------------
 def generate_reply(model, tokenizer, emotion, user_input, max_len=50):
     """Generate response using greedy decoding."""
     model.eval()
@@ -86,45 +74,51 @@ st.set_page_config(page_title="Emotion-Aware Chatbot", page_icon="💬", layout=
 
 st.markdown("<h1 style='text-align:center;'>💬 Emotion-Aware Chatbot</h1>", unsafe_allow_html=True)
 
-# Initialize session state
 if "messages" not in st.session_state:
     st.session_state["messages"] = []
+if "clear_input" not in st.session_state:
+    st.session_state["clear_input"] = False
 
-# Emotion dropdown
 emotion = st.selectbox("Choose Emotion:", ["happy", "sad", "angry", "neutral"])
 
-# User input field
-user_input = st.text_input("Type your message:", key="user_input")
+# 🧩 Use key for text input
+user_input = st.text_input(
+    "Type your message:",
+    key="user_input",
+    value="" if st.session_state.clear_input else "",
+)
 
-# Handle Send button
+# Reset flag right after rendering text_input
+if st.session_state.clear_input:
+    st.session_state.clear_input = False
+
+# Send button logic
 if st.button("Send") and user_input.strip():
-    # Save user message
     st.session_state["messages"].append({
         "role": "user",
         "content": user_input,
         "time": datetime.now().strftime("%H:%M:%S")
     })
 
-    # Load model and tokenizer
     try:
         from transformers import AutoTokenizer
         tokenizer = AutoTokenizer.from_pretrained("gpt2")
-
         model = load_model()
         response = generate_reply(model, tokenizer, emotion, user_input)
     except Exception as e:
         response = f"⚠️ Model error: {e}"
 
-    # Save bot message
     st.session_state["messages"].append({
         "role": "bot",
         "content": response,
         "time": datetime.now().strftime("%H:%M:%S")
     })
 
-    # ✅ Safe clear + rerun
-    st.session_state["user_input"] = ""
+    # ✅ Instead of directly clearing the input (which causes the crash),
+    # set a flag and rerun
+    st.session_state.clear_input = True
     st.rerun()
+
 
 # -------------------------
 # Chat History Display
@@ -133,7 +127,7 @@ st.markdown("---")
 for msg in st.session_state["messages"]:
     role_icon = "🙂" if msg["role"] == "user" else "🤖"
     bubble_color = "#1E90FF" if msg["role"] == "user" else "#333333"
-    text_color = "#FFFFFF" if msg["role"] == "bot" else "#FFFFFF"
+    text_color = "#FFFFFF"
     st.markdown(
         f"""
         <div style='background-color:{bubble_color};
