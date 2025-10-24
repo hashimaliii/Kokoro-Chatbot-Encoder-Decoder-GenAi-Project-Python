@@ -21,7 +21,7 @@ from datetime import datetime
 # -------------------------
 MODEL_DIR = "checkpoints"
 MODEL_PATH = os.path.join(MODEL_DIR, "best_model.pth")
-MODEL_URL = "https://github.com/hashimaliii/Kokoro-Chatbot-Encoder-Decoder-GenAi-Project-Python/raw/main/checkpoints/best_model.pth"  # note /raw/ for direct download
+MODEL_URL = "https://github.com/hashimaliii/Kokoro-Chatbot-Encoder-Decoder-GenAi-Project-Python/raw/main/checkpoints/best_model.pth"
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -49,8 +49,7 @@ def load_model():
     model = checkpoint.get("model", None)
 
     if model is None:
-        # If only state_dict is saved
-        from model import TransformerModel  # ensure you have this file in same dir
+        from model import TransformerModel  # ensure model.py exists
         model = TransformerModel(**checkpoint["config"])
         model.load_state_dict(checkpoint["state_dict"])
 
@@ -87,12 +86,17 @@ st.set_page_config(page_title="Emotion-Aware Chatbot", page_icon="💬", layout=
 
 st.markdown("<h1 style='text-align:center;'>💬 Emotion-Aware Chatbot</h1>", unsafe_allow_html=True)
 
+# Initialize session state
 if "messages" not in st.session_state:
     st.session_state["messages"] = []
 
+# Emotion dropdown
 emotion = st.selectbox("Choose Emotion:", ["happy", "sad", "angry", "neutral"])
+
+# User input field
 user_input = st.text_input("Type your message:", key="user_input")
 
+# Handle Send button
 if st.button("Send") and user_input.strip():
     # Save user message
     st.session_state["messages"].append({
@@ -101,7 +105,7 @@ if st.button("Send") and user_input.strip():
         "time": datetime.now().strftime("%H:%M:%S")
     })
 
-    # Load tokenizer and model
+    # Load model and tokenizer
     try:
         from transformers import AutoTokenizer
         tokenizer = AutoTokenizer.from_pretrained("gpt2")
@@ -117,15 +121,26 @@ if st.button("Send") and user_input.strip():
         "content": response,
         "time": datetime.now().strftime("%H:%M:%S")
     })
-    st.session_state.user_input = ""
 
-# Display chat history
+    # ✅ Safe clear + rerun
+    st.session_state["user_input"] = ""
+    st.rerun()
+
+# -------------------------
+# Chat History Display
+# -------------------------
+st.markdown("---")
 for msg in st.session_state["messages"]:
     role_icon = "🙂" if msg["role"] == "user" else "🤖"
-    bubble_color = "#333333" if msg["role"] == "bot" else "#1E90FF"
+    bubble_color = "#1E90FF" if msg["role"] == "user" else "#333333"
+    text_color = "#FFFFFF" if msg["role"] == "bot" else "#FFFFFF"
     st.markdown(
         f"""
-        <div style='background-color:{bubble_color};padding:10px;border-radius:10px;margin:5px 0;'>
+        <div style='background-color:{bubble_color};
+                    color:{text_color};
+                    padding:10px;
+                    border-radius:10px;
+                    margin:5px 0;'>
             <b>{role_icon}</b> {msg['content']}<br>
             <small><i>{msg['time']}</i></small>
         </div>
