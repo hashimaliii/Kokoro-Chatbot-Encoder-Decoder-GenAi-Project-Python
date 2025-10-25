@@ -1,7 +1,3 @@
-Sure — here’s a complete **`README.md`** for your GitHub repository 👇
-
----
-
 ```markdown
 # 🤖 Emotion-Aware Customer Support Agent  
 *A Transformer trained from scratch to understand and respond with empathy.*
